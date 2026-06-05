@@ -33,6 +33,7 @@ One PowerShell command sets up the whole thing and handles the Windows edge-case
 ## Contents
 - [Requirements](#requirements)
 - [Quick start](#quick-start)
+- [Let an AI agent set it up for you](#let-an-ai-agent-set-it-up-for-you)
 - [Connect from your device](#connect-from-your-device) — [iPhone](#-iphone--ipad) · [Android](#-android) · [Mac](#️-macos) · [Linux/Windows](#-linux---another-windows-pc)
 - [⚠️ If your login is rejected (Microsoft account / PIN trap)](#️-if-your-login-is-rejected--the-microsoft-account--pin-trap)
 - [What you can do once connected](#what-you-can-do-once-connected)
@@ -82,6 +83,32 @@ irm https://raw.githubusercontent.com/vonzelle-vzt/vzt-ssh-phone/main/install.ps
 ```
 
 > 🔐 You only ever paste a **public** key. The matching private key stays on your device and never travels.
+
+---
+
+## Let an AI agent set it up for you
+
+Already running an AI coding agent in your terminal — **Claude Code, OpenAI Codex, or Gemini CLI**? Just tell it to set this up and it can **take over and do the whole thing**, the same way a human operator would: self-elevate, run headless, poll its own progress, install the CLIs, and hand you back the connection string. You're left with only the handful of steps a human physically must do (approve one UAC prompt, sign into Tailscale, sign into the CLI once).
+
+Tell your agent:
+
+> "Set up vzt-ssh-phone so I can SSH into this PC from my phone — clone https://github.com/vonzelle-vzt/vzt-ssh-phone and follow its AGENTS.md."
+
+The repo ships agent instructions that each tool auto-discovers — **[`AGENTS.md`](AGENTS.md)** (Codex + the cross-agent standard), **[`CLAUDE.md`](CLAUDE.md)** (Claude Code), **[`GEMINI.md`](GEMINI.md)** (Gemini CLI). They drive the **unattended install path**:
+
+```powershell
+# what the agent runs for you (elevated, headless, pollable):
+$status = "$env:USERPROFILE\vzt-ssh-status.jsonl"
+Start-Process powershell -Verb RunAs -ArgumentList @(
+  '-NoProfile','-ExecutionPolicy','Bypass','-File','install.ps1',
+  '-PublicKey','ssh-ed25519 AAAA... yourphone',
+  '-InstallClis','all',            # claude + codex + gemini
+  '-StatusFile',$status            # JSONL progress; "<status>.done" appears when finished
+)
+# ...agent polls "$status.done", then runs verify.ps1 and reports: ssh <user>@<ip>
+```
+
+The `-InstallClis` and `-StatusFile` flags exist precisely for this — see [Options & flags](#options--flags).
 
 ---
 
@@ -226,6 +253,8 @@ After that, each tool caches its credentials in your home folder (e.g. `~\.claud
 | `-PublicKey "<line>"` | — | SSH **public** key line to authorize (e.g. `ssh-ed25519 AAAA... phone`). |
 | `-SkipTailscale` | off | Don't install/start Tailscale (e.g. you only need LAN access). |
 | `-Port <n>` | `22` | SSH port. Also updates `sshd_config` and the firewall rule. |
+| `-InstallClis "<list>"` | — | Also install AI CLIs: `claude`, `codex`, `gemini`, a comma list, or `all`. |
+| `-StatusFile "<abs path>"` | — | Stream JSONL progress + write `<path>.done` on finish, so an [AI agent](#let-an-ai-agent-set-it-up-for-you) can run this unattended and poll it. |
 
 Examples:
 ```powershell

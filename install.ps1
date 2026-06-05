@@ -39,17 +39,30 @@
 param(
   [string]$PublicKey,
   [switch]$SkipTailscale,
-  [int]$Port = 22
+  [int]$Port = 22,
+  # Comma list of AI CLIs to install: claude, codex, gemini  (or "all").
+  [string]$InstallClis,
+  # Absolute path to a JSONL progress file. When set, the (elevated) run streams
+  # one JSON line per phase and writes "<StatusFile>.done" when finished, so an
+  # AI agent can launch this unattended and poll for completion. See AGENTS.md.
+  [string]$StatusFile
 )
 
 $ErrorActionPreference = 'Stop'
 $BootstrapUrl = 'https://raw.githubusercontent.com/vonzelle-vzt/vzt-ssh-phone/main/install.ps1'
 
 function Test-Admin { ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator) }
-function Step($m){ Write-Host "`n==> $m" -ForegroundColor Cyan }
+# Emit a machine-readable progress line when -StatusFile is set (for AI-agent installs).
+function Emit($phase,$state,$msg){
+  if ($StatusFile) {
+    try { ([pscustomobject]@{ phase=$phase; state=$state; msg="$msg" } | ConvertTo-Json -Compress) |
+            Add-Content -Path $StatusFile -Encoding utf8 } catch {}
+  }
+}
+function Step($m){ Write-Host "`n==> $m" -ForegroundColor Cyan; Emit $m 'progress' $m }
 function Info($m){ Write-Host "    $m" -ForegroundColor Gray }
 function Ok($m){   Write-Host "    [OK] $m" -ForegroundColor Green }
-function Warn($m){ Write-Host "    [!] $m" -ForegroundColor Yellow }
+function Warn($m){ Write-Host "    [!] $m" -ForegroundColor Yellow; Emit 'warn' 'warn' $m }
 
 # ---------------------------------------------------------------- self-elevate
 if (-not (Test-Admin)) {
@@ -60,6 +73,8 @@ if (-not (Test-Admin)) {
     if ($PublicKey)    { $a += @('-PublicKey', "`"$PublicKey`"") }
     if ($SkipTailscale){ $a += '-SkipTailscale' }
     if ($Port -ne 22)  { $a += @('-Port', "$Port") }
+    if ($InstallClis)  { $a += @('-InstallClis', "`"$InstallClis`"") }
+    if ($StatusFile)   { $a += @('-StatusFile', "`"$StatusFile`"") }
   } else {
     # Running piped (irm | iex): re-bootstrap from the URL inside the elevated shell.
     $a += @('-Command', "irm $BootstrapUrl | iex")
@@ -69,6 +84,13 @@ if (-not (Test-Admin)) {
 }
 
 Write-Host "`n=== vzt-ssh-phone : remote SSH setup ===" -ForegroundColor White
+
+# Reset the status file for a fresh run (agent mode).
+if ($StatusFile) {
+  '' | Set-Content -Path $StatusFile -Encoding utf8
+  Remove-Item "$StatusFile.done" -ErrorAction SilentlyContinue
+  Emit 'start' 'progress' "elevated as $([Security.Principal.WindowsIdentity]::GetCurrent().Name)"
+}
 
 # ---------------------------------------------------------------- 1. OpenSSH server
 Step "OpenSSH server"
@@ -204,6 +226,26 @@ if (-not $SkipTailscale) {
   }
 }
 
+# ---------------------------------------------------------------- 6. AI CLIs (optional)
+if ($InstallClis) {
+  Step "AI CLI tools"
+  $map  = @{ claude = '@anthropic-ai/claude-code'; codex = '@openai/codex'; gemini = '@google/gemini-cli' }
+  $want = if ($InstallClis.Trim().ToLower() -eq 'all') { @('claude','codex','gemini') }
+          else { $InstallClis -split '[,\s]+' | Where-Object { $_ } | ForEach-Object { $_.ToLower() } }
+  if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+    Warn "npm/Node.js not found - install Node.js (https://nodejs.org), then re-run with -InstallClis"
+  } else {
+    foreach ($cli in $want) {
+      if (-not $map.ContainsKey($cli)) { Warn "unknown CLI '$cli' (use: claude, codex, gemini)"; continue }
+      if (Get-Command $cli -ErrorAction SilentlyContinue) { Ok "$cli already installed"; continue }
+      Info "installing $cli ($($map[$cli]))..."
+      try { & npm install -g $map[$cli] *> $null } catch {}
+      if (Get-Command $cli -ErrorAction SilentlyContinue) { Ok "$cli installed - sign in ONCE locally at the PC (run '$cli')" }
+      else { Warn "$cli install may have failed - try: npm install -g $($map[$cli])" }
+    }
+  }
+}
+
 # ---------------------------------------------------------------- summary
 $ip = if ($ip) { $ip } else { (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
         Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.*' } |
@@ -223,3 +265,9 @@ Write-Host "  Auth     : $authState"
 Write-Host "  After a reboot: nothing to do - sshd + Tailscale auto-start."
 Write-Host "  See README for iPhone / Android / Mac client steps."
 Write-Host ""
+
+# Signal completion for agent-driven (unattended) installs.
+if ($StatusFile) {
+  Emit 'done' 'success' "ssh $($env:USERNAME)@$ip"
+  "ssh $($env:USERNAME)@$ip" | Out-File "$StatusFile.done" -Encoding ascii
+}
