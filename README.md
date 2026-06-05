@@ -34,6 +34,7 @@ One PowerShell command sets up the whole thing and handles the Windows edge-case
 - [Requirements](#requirements)
 - [Quick start](#quick-start)
 - [Connect from your device](#connect-from-your-device) — [iPhone](#-iphone--ipad) · [Android](#-android) · [Mac](#️-macos) · [Linux/Windows](#-linux---another-windows-pc)
+- [⚠️ If your login is rejected (Microsoft account / PIN trap)](#️-if-your-login-is-rejected--the-microsoft-account--pin-trap)
 - [What you can do once connected](#what-you-can-do-once-connected)
 - [Running AI coding CLIs (Claude Code, Codex, …)](#running-ai-coding-clis-claude-code-codex-)
 - [How it works](#how-it-works)
@@ -136,6 +137,41 @@ ssh <your-windows-user>@<tailscale-ip>
 
 ---
 
+## ⚠️ If your login is rejected — the Microsoft-account / PIN trap
+
+This is the **single most common reason a fresh setup won't connect**, and it's worth understanding because the error is misleading. The connection *succeeds*, then authentication fails:
+
+```
+Permission denied (publickey,password,keyboard-interactive)
+```
+
+…and every password you try gets rejected. Here's the real story — and the fix that actually gets you in.
+
+### Why it happens
+If you sign into Windows with a **Microsoft account** (most personal PCs do):
+- **Your sign-in PIN is _not_ your account password.** A PIN only unlocks the device locally — SSH can't use it. Typing your PIN as the SSH password will always fail.
+- **The account password is managed online** by Microsoft. It can't be reset locally (`net user <you> <pw>` returns **System error 8646** — *"the system is not authoritative for this account"*), and it's frequently not something you actually remember typing.
+
+So password login is effectively a dead end. **The thing that gets you connected is key authentication — adding your device's key as an authorized identity on the PC.**
+
+### The fix that works (step by step)
+1. **Generate a key on your client device** (don't reuse one):
+   - Phone SSH app → *Generate Key → ED25519* (no passphrase).
+   - Mac/Linux → `ssh-keygen -t ed25519`.
+2. **Copy the PUBLIC key** — the `ssh-ed25519 AAAA… ` line (never the private one).
+3. **Authorize it on the PC** by re-running the installer with it:
+   ```powershell
+   .\install.ps1 -PublicKey "ssh-ed25519 AAAA… mydevice"
+   ```
+   > 🧷 **Admin-account gotcha:** if your Windows user is an **administrator**, the key must live in `C:\ProgramData\ssh\administrators_authorized_keys` with an ACL locked to `SYSTEM` + `Administrators` — **not** the usual `~\.ssh\authorized_keys`. Dropping an admin's key in the normal file silently does nothing and you'll keep getting *Permission denied*. The installer puts it in the right place automatically; this is the detail that trips people up when they do it by hand.
+4. **Point your SSH app at that key** as its login identity (Termius: it's inside the host's **Password field**, or under **Keychain → Identities**) and connect.
+
+Now login uses the **key**, the password prompt is skipped entirely, and you're in — **no Microsoft password and no PIN required.** This is exactly the path that resolved a real "I only know my PIN" setup.
+
+> 💡 Prefer generating the key **on the client** (not on the PC) so the private key never travels — the PC only ever holds the public half.
+
+---
+
 ## What you can do once connected
 You land in a **PowerShell** session on the PC, as your normal user, with your `PATH` intact. From your phone or laptop you can:
 - Run AI coding agents — **[Claude Code](https://claude.com/claude-code)** (`claude`), **OpenAI Codex** (`codex`), and others (see [below](#running-ai-coding-clis-claude-code-codex-)).
@@ -150,19 +186,21 @@ Reaching any CLI over SSH is **identical** — you connect once, then type the c
 
 **Install on the PC (one time, in PowerShell):**
 ```powershell
-npm install -g @anthropic-ai/claude-code   # Claude Code   ->  run with: claude
-npm install -g @openai/codex               # OpenAI Codex  ->  run with: codex
+npm install -g @anthropic-ai/claude-code   # Claude Code    ->  run with: claude
+npm install -g @openai/codex               # OpenAI Codex   ->  run with: codex
+npm install -g @google/gemini-cli          # Google Gemini  ->  run with: gemini
 ```
-*(Both need [Node.js](https://nodejs.org) — already present if you can run `npm`.)*
+*(All need [Node.js](https://nodejs.org) — already present if you can run `npm`.)*
 
 **Sign in once — do this while you're physically at the PC.** First-run authentication opens a **browser**, which appears on the PC's own screen, not your phone:
 ```powershell
 claude      # complete the login prompt once
 codex       # complete the login prompt once
+gemini      # complete the Google login prompt once
 ```
 After that, each tool caches its credentials in your home folder (e.g. `~\.claude`, `~\.codex`), so **every later SSH session from your phone just works** — type `claude` or `codex` and go.
 
-> Same recipe for any terminal tool (`gemini`, `aider`, `gh`, `git`, …): install it on the PC, authenticate once locally, then run it over SSH like anything else. If a tool *only* authenticates via browser and you've never signed in locally, do that one-time login at the PC first.
+> Same recipe for any terminal tool (`aider`, `gh`, `git`, …): install it on the PC, authenticate once locally, then run it over SSH like anything else. If a tool *only* authenticates via browser and you've never signed in locally, do that one-time login at the PC first.
 
 ---
 
