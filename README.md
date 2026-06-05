@@ -363,6 +363,7 @@ Tailscale already covers Mosh's headline feature (a stable address that follows 
 | [`AGENTS.md`](AGENTS.md) | Agent-takeover playbook — how an AI CLI drives the whole install unattended (Codex + the cross-agent standard). |
 | [`CLAUDE.md`](CLAUDE.md) · [`GEMINI.md`](GEMINI.md) | Thin pointers so Claude Code and Gemini CLI auto-discover `AGENTS.md`. |
 | `README.md` | This guide. |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to contribute — dev/test workflow, conventions, security rules. |
 | `assets/banner.png` | Project banner. |
 | `LICENSE` | MIT. |
 
@@ -371,7 +372,7 @@ Tailscale already covers Mosh's headline feature (a stable address that follows 
 ## About
 **`vzt-ssh-phone`** turns a Windows PC into a secure, key-authenticated SSH target you can reach from any device over a private Tailscale network — with a one-command installer, an AI-agent takeover mode, and built-in support for running Claude Code, Codex, and Gemini from your phone.
 
-Built and maintained by **[VZT Tech Consulting](https://github.com/vonzelle-vzt)**. Issues and pull requests welcome. If it saved you a headache, a ⭐ is appreciated.
+Built and maintained by **[VZT Tech Consulting](https://github.com/vonzelle-vzt)**. Issues and pull requests welcome — see **[CONTRIBUTING.md](CONTRIBUTING.md)**. If it saved you a headache, a ⭐ is appreciated.
 
 ---
 
