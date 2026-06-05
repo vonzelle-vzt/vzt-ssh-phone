@@ -308,6 +308,7 @@ Keys live in `C:\ProgramData\ssh\administrators_authorized_keys` (admin accounts
 - **Key auth, not passwords.** The private key stays on your device; the PC stores only the public half.
 - **Generate keys on the client** so the private key never travels.
 - **No secrets in this repo.** Example keys in the docs are truncated placeholders. `.gitignore` blocks committing any `*_key`, `id_*`, `*.pem`, or logs.
+- **Found a vulnerability?** See [`SECURITY.md`](SECURITY.md) for private reporting and what's in scope.
 
 ---
 
@@ -364,6 +365,7 @@ Tailscale already covers Mosh's headline feature (a stable address that follows 
 | [`CLAUDE.md`](CLAUDE.md) · [`GEMINI.md`](GEMINI.md) | Thin pointers so Claude Code and Gemini CLI auto-discover `AGENTS.md`. |
 | `README.md` | This guide. |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to contribute — dev/test workflow, conventions, security rules. |
+| [`SECURITY.md`](SECURITY.md) | Security policy — how to privately report a vulnerability, and what's in/out of scope. |
 | `assets/banner.png` | Project banner. |
 | `LICENSE` | MIT. |
 
