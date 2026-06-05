@@ -1,0 +1,46 @@
+name: Lint PowerShell
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**.ps1'
+      - 'PSScriptAnalyzerSettings.psd1'
+      - '.github/workflows/lint.yml'
+  pull_request:
+    paths:
+      - '**.ps1'
+      - 'PSScriptAnalyzerSettings.psd1'
+      - '.github/workflows/lint.yml'
+  workflow_dispatch:
+
+jobs:
+  psscriptanalyzer:
+    name: PSScriptAnalyzer
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+
+      - name: Run PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          $results = Invoke-ScriptAnalyzer `
+            -Path . -Recurse `
+            -Settings ./PSScriptAnalyzerSettings.psd1
+
+          if ($results) {
+            $results | Format-Table -AutoSize | Out-String -Width 200 | Write-Host
+            $errors   = @($results | Where-Object Severity -eq 'Error')
+            $warnings = @($results | Where-Object Severity -eq 'Warning')
+            Write-Host "PSScriptAnalyzer found $($errors.Count) error(s) and $($warnings.Count) warning(s)."
+            exit 1
+          }
+
+          Write-Host 'PSScriptAnalyzer: no issues found. ✅'

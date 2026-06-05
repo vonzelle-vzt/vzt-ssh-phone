@@ -36,7 +36,6 @@ Line 'authorized_keys' ([bool]$keysFile) ($(if($keysFile){$keysFile}else{'no key
 $tsExe = 'C:\Program Files\Tailscale\tailscale.exe'
 $ip = $null
 if (Test-Path $tsExe) {
-  $status = (& $tsExe status 2>$null | Select-Object -First 1)
   $ip = (& $tsExe ip -4 2>$null | Select-Object -First 1)
   Line 'tailscale' ([bool]$ip) ($(if($ip){"up @ $ip"}else{'installed, logged out (run: tailscale up)'}))
 } else {

@@ -70,7 +70,7 @@ function Test-Admin { ([Security.Principal.WindowsPrincipal][Security.Principal.
 function Emit($phase,$state,$msg){
   if ($StatusFile) {
     try { ([pscustomobject]@{ phase=$phase; state=$state; msg="$msg" } | ConvertTo-Json -Compress) |
-            Add-Content -Path $StatusFile -Encoding utf8 } catch {}
+            Add-Content -Path $StatusFile -Encoding utf8 } catch { $null = $_ }  # best-effort: never block install on status logging
   }
 }
 function Step($m){ Write-Host "`n==> $m" -ForegroundColor Cyan; Emit $m 'progress' $m }
@@ -253,7 +253,7 @@ if ($InstallClis) {
       if (-not $map.ContainsKey($cli)) { Warn "unknown CLI '$cli' (use: claude, codex, gemini)"; continue }
       if (Get-Command $cli -ErrorAction SilentlyContinue) { Ok "$cli already installed"; continue }
       Info "installing $cli ($($map[$cli]))..."
-      try { & npm install -g $map[$cli] *> $null } catch {}
+      try { & npm install -g $map[$cli] *> $null } catch { $null = $_ }  # fall through to the Get-Command check below
       if (Get-Command $cli -ErrorAction SilentlyContinue) { Ok "$cli installed - sign in ONCE locally at the PC (run '$cli')" }
       else { Warn "$cli install may have failed - try: npm install -g $($map[$cli])" }
     }
