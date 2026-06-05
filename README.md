@@ -46,6 +46,8 @@ One PowerShell command sets up the whole thing and handles the Windows edge-case
 - [Security notes](#security-notes)
 - [Uninstall](#uninstall)
 - [FAQ](#faq)
+- [What's in this repo](#whats-in-this-repo)
+- [About](#about)
 - [License](#license)
 
 ---
@@ -337,6 +339,26 @@ Only if your account has a real local password (many don't — see the Microsoft
 
 **Is it safe to re-run the installer?**
 Yes — it's idempotent. Re-run it to add a new device's key or repair the setup.
+
+---
+
+## What's in this repo
+| File | Purpose |
+|---|---|
+| [`install.ps1`](install.ps1) | Self-elevating, idempotent installer — SSH server (with standalone fallback), firewall, PowerShell shell, key authorization, Tailscale, and optional AI CLIs. |
+| [`verify.ps1`](verify.ps1) | Read-only health check; prints your `ssh <user>@<ip>` connection string. |
+| [`AGENTS.md`](AGENTS.md) | Agent-takeover playbook — how an AI CLI drives the whole install unattended (Codex + the cross-agent standard). |
+| [`CLAUDE.md`](CLAUDE.md) · [`GEMINI.md`](GEMINI.md) | Thin pointers so Claude Code and Gemini CLI auto-discover `AGENTS.md`. |
+| `README.md` | This guide. |
+| `assets/banner.png` | Project banner. |
+| `LICENSE` | MIT. |
+
+---
+
+## About
+**`vzt-ssh-phone`** turns a Windows PC into a secure, key-authenticated SSH target you can reach from any device over a private Tailscale network — with a one-command installer, an AI-agent takeover mode, and built-in support for running Claude Code, Codex, and Gemini from your phone.
+
+Built and maintained by **[VZT Tech Consulting](https://github.com/vonzelle-vzt)**. Issues and pull requests welcome. If it saved you a headache, a ⭐ is appreciated.
 
 ---
 

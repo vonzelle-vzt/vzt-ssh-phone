@@ -13,8 +13,9 @@
     5. Public key      - authorizes a key you generated on your CLIENT device (recommended).
     6. Tailscale       - installs + brings up a private mesh network so you can reach this PC
                          from anywhere without exposing it to the public internet.
+    7. AI CLIs (opt.)  - optionally npm-installs Claude Code / Codex / Gemini (-InstallClis).
 
-  The script self-elevates via UAC (you approve one prompt).
+  The script self-elevates via UAC (you approve one prompt). It is idempotent - safe to re-run.
 
 .PARAMETER PublicKey
   An SSH public key LINE to authorize, e.g. "ssh-ed25519 AAAA... phone".
@@ -27,6 +28,15 @@
 .PARAMETER Port
   SSH port. Default 22.
 
+.PARAMETER InstallClis
+  Also install AI coding CLIs. Comma list of: claude, codex, gemini  (or "all").
+  Requires Node.js/npm. The tools still need a one-time local browser sign-in.
+
+.PARAMETER StatusFile
+  Absolute path to a JSONL progress file. When set, the (elevated) run streams one
+  JSON line per phase and writes "<StatusFile>.done" on completion, so an AI agent
+  can launch this unattended and poll for it. See AGENTS.md.
+
 .EXAMPLE
   # Server-only setup (add your key afterward):
   irm https://raw.githubusercontent.com/vonzelle-vzt/vzt-ssh-phone/main/install.ps1 | iex
@@ -34,6 +44,10 @@
 .EXAMPLE
   # Full setup with your phone's public key:
   .\install.ps1 -PublicKey "ssh-ed25519 AAAAC3NzaC1... phone"
+
+.EXAMPLE
+  # Unattended agent install: server + key + all CLIs, with a pollable status file:
+  .\install.ps1 -PublicKey "ssh-ed25519 AAAA... phone" -InstallClis all -StatusFile "$env:USERPROFILE\vzt-ssh-status.jsonl"
 #>
 [CmdletBinding()]
 param(
