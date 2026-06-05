@@ -340,6 +340,19 @@ Only if your account has a real local password (many don't — see the Microsoft
 **Is it safe to re-run the installer?**
 Yes — it's idempotent. Re-run it to add a new device's key or repair the setup.
 
+**Mosh vs. this — which is better?**
+They're not really competitors: **Mosh runs *on top of* SSH**, it isn't a different way in. And **Windows has no native `mosh-server`**, so `mosh user@pc` won't work directly. You *can* run it through WSL (`mosh --server="wsl mosh-server" user@pc`), but that lands you in **Linux (WSL)** — not Windows PowerShell — so your Windows-installed `claude` / `codex` / `gemini` aren't there. For this tool's purpose (land in PowerShell and run your CLIs), **plain SSH over Tailscale is the better fit**:
+
+| | SSH + Tailscale (this) | Mosh |
+|---|---|---|
+| Lands you in | **Windows PowerShell** (your tools) | Linux/WSL |
+| Survives network switches | Reconnect is instant (Tailscale keeps the address stable) | ✅ Seamless |
+| Snappy on high-latency links | Keystrokes round-trip | ✅ Local echo |
+| File transfer (scp/sftp), tunnels | ✅ | ❌ terminal only |
+| Client apps | Any (Termius, Blink, native `ssh`) | Fewer (**Blink yes, Termius no**) |
+
+Tailscale already covers Mosh's headline feature (a stable address that follows your PC across Wi-Fi/cellular), so SSH here gives you the better *environment* without losing much resilience. **Mosh only wins** on genuinely flaky/high-latency connections *and* if you're fine working in Linux. The same tradeoff holds from a Mac client — the limiting factor is the Windows *host*, not your client OS.
+
 ---
 
 ## What's in this repo
