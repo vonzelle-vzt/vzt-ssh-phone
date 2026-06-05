@@ -35,6 +35,7 @@ One PowerShell command sets up the whole thing and handles the Windows edge-case
 - [Quick start](#quick-start)
 - [Connect from your device](#connect-from-your-device) — [iPhone](#-iphone--ipad) · [Android](#-android) · [Mac](#️-macos) · [Linux/Windows](#-linux---another-windows-pc)
 - [What you can do once connected](#what-you-can-do-once-connected)
+- [Running AI coding CLIs (Claude Code, Codex, …)](#running-ai-coding-clis-claude-code-codex-)
 - [How it works](#how-it-works)
 - [Options & flags](#options--flags)
 - [Verify / health check](#verify--health-check)
@@ -137,10 +138,31 @@ ssh <your-windows-user>@<tailscale-ip>
 
 ## What you can do once connected
 You land in a **PowerShell** session on the PC, as your normal user, with your `PATH` intact. From your phone or laptop you can:
-- Run **[Claude Code](https://claude.com/claude-code)** — just type `claude`.
+- Run AI coding agents — **[Claude Code](https://claude.com/claude-code)** (`claude`), **OpenAI Codex** (`codex`), and others (see [below](#running-ai-coding-clis-claude-code-codex-)).
 - Drive `git`, `node`, `npm`, `python`, builds, tests — anything that's normally on your `PATH`.
 - Navigate and edit files, tail logs, restart services, check on long-running jobs.
 - Kick something off, disconnect, and reconnect later — the PC keeps running.
+
+---
+
+## Running AI coding CLIs (Claude Code, Codex, …)
+Reaching any CLI over SSH is **identical** — you connect once, then type the command. `claude`, `codex`, and friends all work the exact same way; SSH doesn't care which one you run. The only per-tool requirement is that it's **installed and signed in on the PC**.
+
+**Install on the PC (one time, in PowerShell):**
+```powershell
+npm install -g @anthropic-ai/claude-code   # Claude Code   ->  run with: claude
+npm install -g @openai/codex               # OpenAI Codex  ->  run with: codex
+```
+*(Both need [Node.js](https://nodejs.org) — already present if you can run `npm`.)*
+
+**Sign in once — do this while you're physically at the PC.** First-run authentication opens a **browser**, which appears on the PC's own screen, not your phone:
+```powershell
+claude      # complete the login prompt once
+codex       # complete the login prompt once
+```
+After that, each tool caches its credentials in your home folder (e.g. `~\.claude`, `~\.codex`), so **every later SSH session from your phone just works** — type `claude` or `codex` and go.
+
+> Same recipe for any terminal tool (`gemini`, `aider`, `gh`, `git`, …): install it on the PC, authenticate once locally, then run it over SSH like anything else. If a tool *only* authenticates via browser and you've never signed in locally, do that one-time login at the PC first.
 
 ---
 
