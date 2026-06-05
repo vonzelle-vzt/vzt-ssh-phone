@@ -1,0 +1,10 @@
+# local artifacts / never commit keys or logs
+*.log
+*.done
+*.key
+*_key
+*_key.pub
+id_*
+*.pem
+.DS_Store
+Thumbs.db
